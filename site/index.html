@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Tamagotchi Remote Installer</title>
+  <meta name="description" content="Install and provision Tamagotchi Remote over USB.">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./vendor/esp-web-tools/install-button.js"></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="eyebrow">USB DEPLOYMENT</div>
+      <h1>Tamagotchi Remote</h1>
+      <p>Configure networking, flash the factory firmware, then provision unique credentials directly over USB.</p>
+      <div class="privacy-note">Secrets are generated locally in your browser and are not uploaded by this site.</div>
+    </header>
+
+    <section class="card" id="config-card">
+      <div class="step-title">
+        <span class="step">1</span>
+        <div>
+          <h2>Device configuration</h2>
+          <p>Enter Wi-Fi details and choose DHCP or a static address before flashing.</p>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <label>
+          <span>Wi-Fi SSID</span>
+          <input id="ssid" autocomplete="off" placeholder="My Wi-Fi">
+        </label>
+        <label>
+          <span>Wi-Fi password</span>
+          <input id="wifi-password" type="password" autocomplete="new-password" placeholder="Wi-Fi password">
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>IP configuration</legend>
+        <div class="radio-row">
+          <label class="radio">
+            <input type="radio" name="ip-mode" value="dhcp" checked>
+            <span><strong>DHCP</strong><small>Router assigns the address</small></span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="ip-mode" value="static">
+            <span><strong>Static IP</strong><small>Use a fixed address</small></span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div id="static-fields" class="static-fields hidden">
+        <div class="grid two">
+          <label><span>Static IP</span><input id="static-ip" inputmode="decimal" placeholder="192.168.1.50"></label>
+          <label><span>Gateway</span><input id="gateway" inputmode="decimal" placeholder="192.168.1.1"></label>
+          <label><span>Subnet mask</span><input id="subnet" inputmode="decimal" value="255.255.255.0"></label>
+          <label><span>DNS 1</span><input id="dns1" inputmode="decimal" placeholder="192.168.1.1"></label>
+          <label><span>DNS 2 (optional)</span><input id="dns2" inputmode="decimal" placeholder="1.1.1.1"></label>
+        </div>
+      </div>
+
+      <div class="secret-status">
+        <div>
+          <strong>Per-device credentials</strong>
+          <p>A new API encryption key and OTA password are already generated in memory. They will be shown after provisioning.</p>
+        </div>
+        <button class="secondary" id="regenerate" type="button">Regenerate</button>
+      </div>
+
+      <div id="validation" class="validation" role="status"></div>
+    </section>
+
+    <section class="card">
+      <div class="step-title">
+        <span class="step">2</span>
+        <div>
+          <h2>Install factory firmware</h2>
+          <p>Connect the ESP by USB, then install the factory image.</p>
+        </div>
+      </div>
+
+      <div class="install-box">
+        <esp-web-install-button manifest="./manifest.json">
+          <button class="primary large" slot="activate">Connect &amp; install firmware</button>
+          <div slot="unsupported" class="warning">This browser does not support the required Web Serial features.</div>
+          <div slot="not-allowed" class="warning">The installer must be served from a secure HTTPS origin.</div>
+        </esp-web-install-button>
+      </div>
+
+      <p class="muted">
+        When the ESP Web Tools dialog says installation is complete, close it and continue below.
+      </p>
+    </section>
+
+    <section class="card">
+      <div class="step-title">
+        <span class="step">3</span>
+        <div>
+          <h2>Provision over USB</h2>
+          <p>The browser sends the configuration to the freshly flashed firmware using the Tamagotchi provisioning protocol.</p>
+        </div>
+      </div>
+
+      <button class="primary large" id="provision" type="button">Provision device</button>
+      <div id="serial-status" class="serial-status" role="status">Not connected.</div>
+
+      <details>
+        <summary>What gets sent?</summary>
+        <pre id="payload-preview"></pre>
+      </details>
+    </section>
+
+    <section class="card result hidden" id="result-card">
+      <div class="step-title">
+        <span class="step success">✓</span>
+        <div>
+          <h2>Installation complete</h2>
+          <p>Save these credentials. You will need them to manage this device later.</p>
+        </div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-item">
+          <span>Hostname</span>
+          <code id="result-hostname">—</code>
+        </div>
+        <div class="result-item">
+          <span>IP address</span>
+          <code id="result-ip">—</code>
+        </div>
+        <div class="result-item wide">
+          <span>API encryption key</span>
+          <code id="result-api"></code>
+          <button class="secondary copy" data-copy="result-api">Copy</button>
+        </div>
+        <div class="result-item wide">
+          <span>OTA password</span>
+          <code id="result-ota"></code>
+          <button class="secondary copy" data-copy="result-ota">Copy</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="download-credentials" type="button">Download credentials</button>
+        <button class="secondary" id="copy-yaml" type="button">Copy ESPHome YAML</button>
+      </div>
+    </section>
+
+    <footer>
+      <p>Tamagotchi Remote installer · backend-free deployment</p>
+    </footer>
+  </main>
+</body>
+</html>

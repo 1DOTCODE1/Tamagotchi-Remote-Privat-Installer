@@ -1,0 +1,12 @@
+{
+  "name": "tamagotchi-remote-installer",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "esp-web-tools": "10.1.1"
+  }
+}
