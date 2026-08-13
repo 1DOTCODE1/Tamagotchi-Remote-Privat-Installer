@@ -4,7 +4,8 @@ const RESPONSE_TIMEOUT_MS = 20000;
 
 const $ = (id) => document.getElementById(id);
 
-let secrets = {};
+let randomSecrets = {};
+let lastProvisionedSecrets = { apiEncryptionKey: "", otaPassword: "" };
 let lastResult = { hostname: "", ip: "" };
 
 function randomBytes(length) {
@@ -24,19 +25,42 @@ function toHex(bytes) {
 }
 
 function generateSecrets() {
-  secrets = {
+  randomSecrets = {
     apiEncryptionKey: toBase64(randomBytes(32)),
     otaPassword: toHex(randomBytes(32)),
   };
   updatePreview();
 }
 
+function selectedValue(name) {
+  return document.querySelector(`input[name="${name}"]:checked`).value;
+}
+
 function ipMode() {
-  return document.querySelector('input[name="ip-mode"]:checked').value;
+  return selectedValue("ip-mode");
+}
+
+function apiKeyMode() {
+  return selectedValue("api-key-mode");
+}
+
+function otaPasswordMode() {
+  return selectedValue("ota-password-mode");
 }
 
 function value(id) {
   return $(id).value.trim();
+}
+
+function currentSecrets() {
+  return {
+    apiEncryptionKey: apiKeyMode() === "manual"
+      ? value("manual-api-key")
+      : randomSecrets.apiEncryptionKey,
+    otaPassword: otaPasswordMode() === "manual"
+      ? $("manual-ota-password").value
+      : randomSecrets.otaPassword,
+  };
 }
 
 function validIPv4(ip) {
@@ -46,6 +70,21 @@ function validIPv4(ip) {
     const n = Number(p);
     return n >= 0 && n <= 255 && String(n) === String(Number(p));
   });
+}
+
+function validApiEncryptionKey(key) {
+  if (!key) return false;
+  try {
+    return atob(key).length === 32;
+  } catch (_) {
+    return false;
+  }
+}
+
+function validOtaPassword(password) {
+  return password.length >= 1 &&
+    password.length <= 64 &&
+    /^[\x20-\x7E]+$/.test(password);
 }
 
 function buildPayload() {
@@ -64,6 +103,8 @@ function buildPayload() {
     if (value("dns2")) wifi.dns2 = value("dns2");
   }
 
+  const secrets = currentSecrets();
+
   return {
     protocol: PROTOCOL,
     command: "provision",
@@ -76,8 +117,12 @@ function buildPayload() {
 function safePreview(payload) {
   const clone = structuredClone(payload);
   if (clone.wifi.password) clone.wifi.password = "••••••••";
-  clone.api_encryption_key = "(generated locally; hidden until completion)";
-  clone.ota_password = "(generated locally; hidden until completion)";
+  clone.api_encryption_key = apiKeyMode() === "manual"
+    ? "(manual value; hidden)"
+    : "(random value generated locally; hidden until completion)";
+  clone.ota_password = otaPasswordMode() === "manual"
+    ? "(manual value; hidden)"
+    : "(random value generated locally; hidden until completion)";
   return clone;
 }
 
@@ -104,6 +149,14 @@ function validate() {
     }
   }
 
+  if (apiKeyMode() === "manual" && !validApiEncryptionKey(value("manual-api-key"))) {
+    errors.push("Manual API encryption key must be Base64 that decodes to exactly 32 bytes.");
+  }
+
+  if (otaPasswordMode() === "manual" && !validOtaPassword($("manual-ota-password").value)) {
+    errors.push("Manual OTA password must be 1–64 printable ASCII characters.");
+  }
+
   $("validation").textContent = errors.join(" ");
   $("validation").classList.toggle("error", errors.length > 0);
   return errors.length === 0;
@@ -111,6 +164,12 @@ function validate() {
 
 function setModeVisibility() {
   $("static-fields").classList.toggle("hidden", ipMode() !== "static");
+  $("manual-api-wrap").classList.toggle("hidden", apiKeyMode() !== "manual");
+  $("manual-ota-wrap").classList.toggle("hidden", otaPasswordMode() !== "manual");
+
+  const usingAnyRandom = apiKeyMode() === "random" || otaPasswordMode() === "random";
+  $("random-secret-status").classList.toggle("hidden", !usingAnyRandom);
+
   validate();
   updatePreview();
 }
@@ -125,10 +184,14 @@ async function readProvisionResponse(port) {
   const decoder = new TextDecoder();
   const reader = port.readable.getReader();
   let buffer = "";
+  let timeoutId;
 
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("Timed out waiting for the device response.")), RESPONSE_TIMEOUT_MS)
-  );
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error("Timed out waiting for the device response.")),
+      RESPONSE_TIMEOUT_MS,
+    );
+  });
 
   const readLoop = (async () => {
     try {
@@ -159,7 +222,11 @@ async function readProvisionResponse(port) {
     }
   })();
 
-  return Promise.race([readLoop, timeout]);
+  try {
+    return await Promise.race([readLoop, timeout]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function provision() {
@@ -169,7 +236,7 @@ async function provision() {
   }
 
   if (!("serial" in navigator)) {
-    setSerialStatus("Web Serial is not available in this browser.", "error");
+    setSerialStatus("Web Serial is not available in this browser. Use a Chromium-based desktop browser such as Chrome or Edge.", "error");
     return;
   }
 
@@ -179,19 +246,26 @@ async function provision() {
 
   let port;
   try {
+    const payloadObject = buildPayload();
+    const provisionedSecrets = {
+      apiEncryptionKey: payloadObject.api_encryption_key,
+      otaPassword: payloadObject.ota_password,
+    };
+
     port = await navigator.serial.requestPort();
     await port.open({ baudRate: BAUD_RATE });
 
     setSerialStatus("Connected. Sending provisioning data…");
 
     const writer = port.writable.getWriter();
-    const payload = JSON.stringify(buildPayload()) + "\n";
+    const payload = JSON.stringify(payloadObject) + "\n";
     await writer.write(new TextEncoder().encode(payload));
     writer.releaseLock();
 
     setSerialStatus("Configuration sent. Waiting for confirmation…");
     const response = await readProvisionResponse(port);
 
+    lastProvisionedSecrets = provisionedSecrets;
     lastResult = {
       hostname: response.hostname || "tamagotchi-remote",
       ip: response.ip || (ipMode() === "static" ? value("static-ip") : "DHCP"),
@@ -210,6 +284,10 @@ async function provision() {
   }
 }
 
+function yamlQuoted(value) {
+  return JSON.stringify(value);
+}
+
 function yamlText() {
   return `# Tamagotchi Remote credentials
 # Store this file securely.
@@ -220,19 +298,19 @@ function yamlText() {
 
 api:
   encryption:
-    key: "${secrets.apiEncryptionKey}"
+    key: ${yamlQuoted(lastProvisionedSecrets.apiEncryptionKey)}
 
 ota:
   - platform: esphome
-    password: "${secrets.otaPassword}"
+    password: ${yamlQuoted(lastProvisionedSecrets.otaPassword)}
 `;
 }
 
 function showResult() {
   $("result-hostname").textContent = lastResult.hostname || "—";
   $("result-ip").textContent = lastResult.ip || "—";
-  $("result-api").textContent = secrets.apiEncryptionKey;
-  $("result-ota").textContent = secrets.otaPassword;
+  $("result-api").textContent = lastProvisionedSecrets.apiEncryptionKey;
+  $("result-ota").textContent = lastProvisionedSecrets.otaPassword;
   $("result-card").classList.remove("hidden");
   $("result-card").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -258,9 +336,10 @@ function downloadCredentials() {
   URL.revokeObjectURL(url);
 }
 
-document.querySelectorAll('input[name="ip-mode"]').forEach((el) =>
+document.querySelectorAll('input[name="ip-mode"], input[name="api-key-mode"], input[name="ota-password-mode"]').forEach((el) =>
   el.addEventListener("change", setModeVisibility)
 );
+
 document.querySelectorAll("input").forEach((el) =>
   el.addEventListener("input", () => { validate(); updatePreview(); })
 );
@@ -268,7 +347,7 @@ document.querySelectorAll("input").forEach((el) =>
 $("regenerate").addEventListener("click", () => {
   generateSecrets();
   $("regenerate").textContent = "Regenerated";
-  setTimeout(() => { $("regenerate").textContent = "Regenerate"; }, 1200);
+  setTimeout(() => { $("regenerate").textContent = "Regenerate random values"; }, 1200);
 });
 
 $("provision").addEventListener("click", provision);

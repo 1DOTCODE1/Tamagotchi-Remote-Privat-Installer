@@ -13,10 +13,10 @@
 <body>
   <main class="shell">
     <header class="hero">
-      <div class="eyebrow">USB DEPLOYMENT</div>
+      <div class="eyebrow">USB INSTALLER</div>
       <h1>Tamagotchi Remote</h1>
-      <p>Configure networking, flash the factory firmware, then provision unique credentials directly over USB.</p>
-      <div class="privacy-note">Secrets are generated locally in your browser and are not uploaded by this site.</div>
+      <p>Configure Wi-Fi, install the firmware, and provision your device directly from your browser.</p>
+      <div class="privacy-note">Credentials stay in your browser and are only sent directly to the connected device.</div>
     </header>
 
     <section class="card" id="config-card">
@@ -24,7 +24,7 @@
         <span class="step">1</span>
         <div>
           <h2>Device configuration</h2>
-          <p>Enter Wi-Fi details and choose DHCP or a static address before flashing.</p>
+          <p>Enter the Wi-Fi settings the Tamagotchi Remote should use after installation.</p>
         </div>
       </div>
 
@@ -44,11 +44,11 @@
         <div class="radio-row">
           <label class="radio">
             <input type="radio" name="ip-mode" value="dhcp" checked>
-            <span><strong>DHCP</strong><small>Router assigns the address</small></span>
+            <span><strong>DHCP</strong><small>Recommended. Your router assigns the address.</small></span>
           </label>
           <label class="radio">
             <input type="radio" name="ip-mode" value="static">
-            <span><strong>Static IP</strong><small>Use a fixed address</small></span>
+            <span><strong>Static IP</strong><small>Use a fixed address that you provide.</small></span>
           </label>
         </div>
       </fieldset>
@@ -63,13 +63,54 @@
         </div>
       </div>
 
-      <div class="secret-status">
-        <div>
-          <strong>Per-device credentials</strong>
-          <p>A new API encryption key and OTA password are already generated in memory. They will be shown after provisioning.</p>
+      <fieldset class="credentials-fieldset">
+        <legend>Device credentials</legend>
+        <p class="muted credential-intro">Use newly generated credentials, enter your own, or mix the two options. Save the final values after provisioning.</p>
+
+        <div class="credential-box">
+          <div class="credential-heading">
+            <div>
+              <strong>ESPHome API encryption key</strong>
+              <small>Used by Home Assistant to securely connect to the device.</small>
+            </div>
+            <div class="mini-radio-row">
+              <label><input type="radio" name="api-key-mode" value="random" checked> Random</label>
+              <label><input type="radio" name="api-key-mode" value="manual"> Manual</label>
+            </div>
+          </div>
+          <label id="manual-api-wrap" class="manual-secret hidden">
+            <span>API encryption key</span>
+            <input id="manual-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Base64 32-byte ESPHome API key">
+            <small class="field-help">Must decode to exactly 32 bytes.</small>
+          </label>
         </div>
-        <button class="secondary" id="regenerate" type="button">Regenerate</button>
-      </div>
+
+        <div class="credential-box">
+          <div class="credential-heading">
+            <div>
+              <strong>ESPHome OTA password</strong>
+              <small>Used for future ESPHome OTA firmware uploads.</small>
+            </div>
+            <div class="mini-radio-row">
+              <label><input type="radio" name="ota-password-mode" value="random" checked> Random</label>
+              <label><input type="radio" name="ota-password-mode" value="manual"> Manual</label>
+            </div>
+          </div>
+          <label id="manual-ota-wrap" class="manual-secret hidden">
+            <span>OTA password</span>
+            <input id="manual-ota-password" type="password" autocomplete="new-password" spellcheck="false" maxlength="64" placeholder="Your OTA password">
+            <small class="field-help">1–64 printable ASCII characters.</small>
+          </label>
+        </div>
+
+        <div class="secret-status" id="random-secret-status">
+          <div>
+            <strong>Random credentials ready</strong>
+            <p>Random values are generated locally in this browser. Regenerate them at any time before provisioning.</p>
+          </div>
+          <button class="secondary" id="regenerate" type="button">Regenerate random values</button>
+        </div>
+      </fieldset>
 
       <div id="validation" class="validation" role="status"></div>
     </section>
@@ -79,20 +120,20 @@
         <span class="step">2</span>
         <div>
           <h2>Install factory firmware</h2>
-          <p>Connect the ESP by USB, then install the factory image.</p>
+          <p>Connect your Tamagotchi Remote by USB, then install the firmware.</p>
         </div>
       </div>
 
       <div class="install-box">
         <esp-web-install-button manifest="./manifest.json">
           <button class="primary large" slot="activate">Connect &amp; install firmware</button>
-          <div slot="unsupported" class="warning">This browser does not support the required Web Serial features.</div>
-          <div slot="not-allowed" class="warning">The installer must be served from a secure HTTPS origin.</div>
+          <div slot="unsupported" class="warning">This browser does not support the required Web Serial features. Use a Chromium-based desktop browser such as Chrome or Edge.</div>
+          <div slot="not-allowed" class="warning">The installer must be opened from a secure HTTPS page.</div>
         </esp-web-install-button>
       </div>
 
       <p class="muted">
-        When the ESP Web Tools dialog says installation is complete, close it and continue below.
+        When the installation dialog reports that flashing is complete, close it and continue to provisioning.
       </p>
     </section>
 
@@ -101,7 +142,7 @@
         <span class="step">3</span>
         <div>
           <h2>Provision over USB</h2>
-          <p>The browser sends the configuration to the freshly flashed firmware using the Tamagotchi provisioning protocol.</p>
+          <p>Reconnect to the Tamagotchi Remote serial port so the browser can send your Wi-Fi and security settings.</p>
         </div>
       </div>
 
@@ -109,7 +150,7 @@
       <div id="serial-status" class="serial-status" role="status">Not connected.</div>
 
       <details>
-        <summary>What gets sent?</summary>
+        <summary>Show provisioning data preview</summary>
         <pre id="payload-preview"></pre>
       </details>
     </section>
@@ -119,7 +160,7 @@
         <span class="step success">✓</span>
         <div>
           <h2>Installation complete</h2>
-          <p>Save these credentials. You will need them to manage this device later.</p>
+          <p>Save these credentials somewhere secure. The API key is needed for Home Assistant, and the OTA password is needed for future ESPHome OTA uploads.</p>
         </div>
       </div>
 
@@ -151,7 +192,7 @@
     </section>
 
     <footer>
-      <p>Tamagotchi Remote installer · backend-free deployment</p>
+      <p>Tamagotchi Remote installer · credentials are handled locally in your browser</p>
     </footer>
   </main>
 </body>

@@ -1,153 +1,121 @@
 # Tamagotchi Remote Installer
 
-A backend-free GitHub Pages installer for a custom ESPHome device.
+This page installs and configures a **Tamagotchi Remote** directly from your browser over USB.
 
-It provides:
+You do not need to install ESPHome or any command-line tools to perform the initial setup.
 
-- ESP Web Tools factory flashing
-- Wi-Fi SSID/password entry
-- DHCP or static IPv4 configuration
-- browser-generated 32-byte Base64 ESPHome API encryption key
-- browser-generated 256-bit OTA password
-- JSON-over-Web-Serial provisioning
-- final credential screen
-- downloadable ESPHome credential YAML
-- runtime self-hosting of ESP Web Tools (no CDN on the deployed site)
+## What you need
 
-## Important: two pieces are required
+Before starting, have the following ready:
 
-The **website** is implemented here.
+- A Tamagotchi Remote connected with a **USB data cable**.
+- A desktop/laptop running a Chromium-based browser with Web Serial support, such as Chrome or Edge.
+- The Wi-Fi network name (SSID) and password that the device should use.
+- If you want a static IP, the static address, gateway, subnet mask, and DNS addresses for your network.
 
-The **factory firmware** still needs a small custom ESPHome/external component implementing the serial protocol described in `FIRMWARE_PROTOCOL.md`. Stock ESP Web Tools/Improv does not carry all of the custom static-IP + OTA + API fields used by this installer.
+The installer must be opened from its normal **HTTPS GitHub Pages address**. Web Serial will not work from an insecure HTTP page.
 
-## 1. Add your firmware
+## 1. Enter your Wi-Fi settings
 
-Compile your factory firmware and copy the web-flashable merged/factory image to:
+Enter the Wi-Fi SSID and password for the network the Tamagotchi Remote should join.
 
-```text
-site/firmware/tamagotchi-remote.factory.bin
-```
+Choose one of these network modes:
 
-Then edit:
+- **DHCP** — recommended for most users. Your router chooses the device IP address automatically.
+- **Static IP** — use this if you want the device to always use a specific address. Make sure the IP, gateway, subnet, and DNS values are correct for your network.
 
-```text
-site/manifest.json
-```
+## 2. Choose the API and OTA credentials
 
-The template currently uses:
+The installer lets you configure the two credentials independently.
 
-```json
-"chipFamily": "ESP32-S3"
-```
+### ESPHome API encryption key
 
-Change that if your board uses another supported family.
+This is used for the encrypted ESPHome native API connection, including Home Assistant.
 
-Also update the firmware version in the manifest for each release.
+Choose:
 
-## 2. Create the GitHub repository
+- **Random** — the installer generates a new secure 32-byte Base64 key locally in your browser.
+- **Manual** — enter an existing ESPHome API encryption key. It must be Base64 and decode to exactly 32 bytes.
 
-Create a repository, for example:
+### ESPHome OTA password
 
-```text
-tamagotchi-installer
-```
+This is used for future ESPHome OTA firmware uploads.
 
-Then put this whole project in the repository and push it to the `main` branch.
+Choose:
 
-With Git installed locally:
+- **Random** — the installer generates a new random 64-character password locally in your browser.
+- **Manual** — enter your own password using 1–64 printable ASCII characters.
 
-```bash
-git init
-git add .
-git commit -m "Initial Tamagotchi installer"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/tamagotchi-installer.git
-git push -u origin main
-```
+You can mix these options. For example, you can generate a random API key while using your existing OTA password.
 
-You can also upload the files using GitHub's web interface.
+If either credential is set to **Random**, you can click **Regenerate random values** before provisioning to create a new value.
 
-## 3. Enable GitHub Pages
+## 3. Install the firmware
 
-On GitHub:
+Click **Connect & install firmware**.
 
-1. Open the repository.
-2. Go to **Settings → Pages**.
-3. Under **Build and deployment**, choose **GitHub Actions** as the source.
-4. Push to `main` if a deployment is not already running.
-5. Open the **Actions** tab and wait for the `Deploy installer to GitHub Pages` workflow to succeed.
+When your browser asks you to choose a serial device, select the Tamagotchi Remote / ESP32-S3 USB device.
 
-Your site will normally be available at:
+Follow the installation dialog until flashing completes, then close the dialog.
 
-```text
-https://YOUR-USERNAME.github.io/tamagotchi-installer/
-```
+If the device does not appear in the list, check that your USB cable supports data and reconnect the device.
 
-GitHub Pages supplies HTTPS, which Web Serial/ESP Web Tools requires.
+## 4. Provision the device
 
-## 4. How deployment works
+After flashing, click **Provision device**.
 
-The GitHub Action:
+The browser will ask you to select the serial port again. Choose the Tamagotchi Remote.
 
-1. installs the pinned `esp-web-tools` package;
-2. copies your `site/` folder into `dist/`;
-3. copies ESP Web Tools into `dist/vendor/esp-web-tools/`;
-4. publishes `dist/` to GitHub Pages.
+The installer sends the Wi-Fi configuration, API encryption key, and OTA password directly to the device. Wait for the device to confirm that provisioning completed successfully.
 
-The browser therefore loads ESP Web Tools from **your own GitHub Pages site**, not from a CDN.
+## 5. Save your credentials
 
-## 5. Installer flow
+After successful provisioning, the page shows:
 
-The user:
+- Device hostname
+- Device IP address, when available
+- ESPHome API encryption key
+- ESPHome OTA password
 
-1. enters Wi-Fi information;
-2. chooses DHCP or static IP;
-3. connects the device and flashes the firmware;
-4. closes the ESP Web Tools dialog;
-5. clicks **Provision device** and selects the serial port again;
-6. the site sends one JSON provisioning message at 115200 baud;
-7. the firmware saves everything and replies with hostname/IP;
-8. the site displays the API key and OTA password.
+Keep the API key and OTA password somewhere secure.
 
-Secrets are held in browser memory until provisioning completes. The site does not intentionally store them in localStorage or upload them.
+You can use **Download credentials** to save an ESPHome YAML snippet, or copy the values individually.
 
-## 6. Firmware-side requirements
+The API encryption key is needed when connecting the device to Home Assistant if it is not already known there. The OTA password is used when uploading future ESPHome firmware updates over the network.
 
-Read:
+## Privacy and security
 
-```text
-FIRMWARE_PROTOCOL.md
-```
+The installer has no backend for storing your Wi-Fi password, API key, or OTA password.
 
-The custom firmware component must persist:
+Random credentials are generated locally in your browser. Your configuration is sent directly from the browser to the connected Tamagotchi Remote over USB.
 
-- SSID/password
-- DHCP/static mode
-- static IP/gateway/subnet/DNS when applicable
-- API encryption key
-- OTA password
+Do not share the downloaded credentials file publicly. It contains secrets that provide access to your device.
 
-It must also restore/apply those values at boot.
+## Troubleshooting
 
-## 7. Updating firmware releases
+### The install button says the browser is unsupported
 
-Replace:
+Use a Chromium-based desktop browser such as Chrome or Edge. Web Serial is not available in every browser or on every mobile platform.
 
-```text
-site/firmware/tamagotchi-remote.factory.bin
-```
+### The device does not appear when choosing a USB device
 
-and bump:
+- Make sure the USB cable supports data, not only charging.
+- Disconnect and reconnect the device.
+- Try another USB port.
+- If required by your hardware, put the ESP32-S3 into its USB boot/download mode and try again.
 
-```json
-"version": "1.0.1"
-```
+### Provisioning times out
 
-in `site/manifest.json`, then commit/push. GitHub Pages redeploys automatically.
+After the firmware installation finishes, close the flashing dialog and click **Provision device**. Select the Tamagotchi Remote serial port again.
 
-## Security notes
+If it still times out, reconnect the device and retry provisioning.
 
-- Never commit generated customer/device API keys or OTA passwords.
-- Keep the factory firmware free of shared permanent secrets where possible.
-- Treat downloaded credential YAML files as sensitive.
-- The GitHub repository and Pages site may be public, but per-device secrets are generated client-side.
+### The device does not connect to Wi-Fi
+
+Check the SSID and password. If you selected a static IP, verify that the IP address, gateway, subnet mask, and DNS values belong to the correct network.
+
+You can run the installer again to reconfigure the device when USB provisioning is enabled.
+
+### My manual API key is rejected
+
+An ESPHome API encryption key must be a Base64 value representing exactly 32 bytes. If you do not already have a compatible key, select **Random** and let the installer create one.
