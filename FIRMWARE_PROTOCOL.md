@@ -1,6 +1,6 @@
 # Tamagotchi provisioning protocol v1
 
-The web installer sends either browser-generated or user-supplied credentials using this serial protocol. The factory firmware must implement it for the **Provision device** button to work.
+The web installer sends either a browser-generated API/OTA credential pair or a fully user-supplied API/OTA credential pair using this serial protocol. The factory firmware must implement it for the **Provision device** button to work.
 
 ## Transport
 
@@ -104,4 +104,4 @@ provisioning:
 # - id(ota_esphome).set_auth_password(...)
 ```
 
-Do not put per-device API or OTA secrets in the public GitHub repository. The installer can generate them in the browser or accept values entered manually by the user.
+Do not put per-device API or OTA secrets in the public GitHub repository. The installer can generate both values in the browser or accept both values entered manually by the user.

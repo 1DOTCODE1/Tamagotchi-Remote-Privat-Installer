@@ -65,50 +65,46 @@
 
       <fieldset class="credentials-fieldset">
         <legend>Device credentials</legend>
-        <p class="muted credential-intro">Use newly generated credentials, enter your own, or mix the two options. Save the final values after provisioning.</p>
+        <p class="muted credential-intro">Choose how the ESPHome API and OTA credentials should be created. Both credentials always use the same mode.</p>
 
-        <div class="credential-box">
-          <div class="credential-heading">
-            <div>
-              <strong>ESPHome API encryption key</strong>
-              <small>Used by Home Assistant to securely connect to the device.</small>
-            </div>
-            <div class="mini-radio-row">
-              <label><input type="radio" name="api-key-mode" value="random" checked> Random</label>
-              <label><input type="radio" name="api-key-mode" value="manual"> Manual</label>
-            </div>
-          </div>
-          <label id="manual-api-wrap" class="manual-secret hidden">
-            <span>API encryption key</span>
-            <input id="manual-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Base64 32-byte ESPHome API key">
-            <small class="field-help">Must decode to exactly 32 bytes.</small>
+        <div class="radio-row">
+          <label class="radio">
+            <input type="radio" name="credential-mode" value="random" checked>
+            <span>
+              <strong>Random</strong>
+              <small>Recommended. Generate a secure API encryption key and OTA password locally in this browser.</small>
+            </span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="credential-mode" value="manual">
+            <span>
+              <strong>Manual</strong>
+              <small>Use an existing API encryption key and OTA password that you provide.</small>
+            </span>
           </label>
         </div>
 
-        <div class="credential-box">
-          <div class="credential-heading">
-            <div>
-              <strong>ESPHome OTA password</strong>
-              <small>Used for future ESPHome OTA firmware uploads.</small>
-            </div>
-            <div class="mini-radio-row">
-              <label><input type="radio" name="ota-password-mode" value="random" checked> Random</label>
-              <label><input type="radio" name="ota-password-mode" value="manual"> Manual</label>
-            </div>
+        <div id="manual-credential-fields" class="static-fields credential-fields hidden">
+          <div class="grid two">
+            <label>
+              <span>ESPHome API encryption key</span>
+              <input id="manual-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Base64 32-byte ESPHome API key">
+              <small class="field-help">Must decode to exactly 32 bytes.</small>
+            </label>
+            <label>
+              <span>ESPHome OTA password</span>
+              <input id="manual-ota-password" type="password" autocomplete="new-password" spellcheck="false" maxlength="64" placeholder="Your OTA password">
+              <small class="field-help">1–64 printable ASCII characters.</small>
+            </label>
           </div>
-          <label id="manual-ota-wrap" class="manual-secret hidden">
-            <span>OTA password</span>
-            <input id="manual-ota-password" type="password" autocomplete="new-password" spellcheck="false" maxlength="64" placeholder="Your OTA password">
-            <small class="field-help">1–64 printable ASCII characters.</small>
-          </label>
         </div>
 
         <div class="secret-status" id="random-secret-status">
           <div>
             <strong>Random credentials ready</strong>
-            <p>Random values are generated locally in this browser. Regenerate them at any time before provisioning.</p>
+            <p>A new API encryption key and OTA password were generated locally in this browser.</p>
           </div>
-          <button class="secondary" id="regenerate" type="button">Regenerate random values</button>
+          <button class="secondary" id="regenerate" type="button">Regenerate</button>
         </div>
       </fieldset>
 

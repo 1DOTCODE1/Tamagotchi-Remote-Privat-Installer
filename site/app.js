@@ -40,12 +40,8 @@ function ipMode() {
   return selectedValue("ip-mode");
 }
 
-function apiKeyMode() {
-  return selectedValue("api-key-mode");
-}
-
-function otaPasswordMode() {
-  return selectedValue("ota-password-mode");
+function credentialMode() {
+  return selectedValue("credential-mode");
 }
 
 function value(id) {
@@ -53,13 +49,16 @@ function value(id) {
 }
 
 function currentSecrets() {
+  if (credentialMode() === "manual") {
+    return {
+      apiEncryptionKey: value("manual-api-key"),
+      otaPassword: $("manual-ota-password").value,
+    };
+  }
+
   return {
-    apiEncryptionKey: apiKeyMode() === "manual"
-      ? value("manual-api-key")
-      : randomSecrets.apiEncryptionKey,
-    otaPassword: otaPasswordMode() === "manual"
-      ? $("manual-ota-password").value
-      : randomSecrets.otaPassword,
+    apiEncryptionKey: randomSecrets.apiEncryptionKey,
+    otaPassword: randomSecrets.otaPassword,
   };
 }
 
@@ -117,10 +116,11 @@ function buildPayload() {
 function safePreview(payload) {
   const clone = structuredClone(payload);
   if (clone.wifi.password) clone.wifi.password = "••••••••";
-  clone.api_encryption_key = apiKeyMode() === "manual"
+  const manualCredentials = credentialMode() === "manual";
+  clone.api_encryption_key = manualCredentials
     ? "(manual value; hidden)"
     : "(random value generated locally; hidden until completion)";
-  clone.ota_password = otaPasswordMode() === "manual"
+  clone.ota_password = manualCredentials
     ? "(manual value; hidden)"
     : "(random value generated locally; hidden until completion)";
   return clone;
@@ -149,12 +149,14 @@ function validate() {
     }
   }
 
-  if (apiKeyMode() === "manual" && !validApiEncryptionKey(value("manual-api-key"))) {
-    errors.push("Manual API encryption key must be Base64 that decodes to exactly 32 bytes.");
-  }
+  if (credentialMode() === "manual") {
+    if (!validApiEncryptionKey(value("manual-api-key"))) {
+      errors.push("Manual API encryption key must be Base64 that decodes to exactly 32 bytes.");
+    }
 
-  if (otaPasswordMode() === "manual" && !validOtaPassword($("manual-ota-password").value)) {
-    errors.push("Manual OTA password must be 1–64 printable ASCII characters.");
+    if (!validOtaPassword($("manual-ota-password").value)) {
+      errors.push("Manual OTA password must be 1–64 printable ASCII characters.");
+    }
   }
 
   $("validation").textContent = errors.join(" ");
@@ -164,11 +166,10 @@ function validate() {
 
 function setModeVisibility() {
   $("static-fields").classList.toggle("hidden", ipMode() !== "static");
-  $("manual-api-wrap").classList.toggle("hidden", apiKeyMode() !== "manual");
-  $("manual-ota-wrap").classList.toggle("hidden", otaPasswordMode() !== "manual");
 
-  const usingAnyRandom = apiKeyMode() === "random" || otaPasswordMode() === "random";
-  $("random-secret-status").classList.toggle("hidden", !usingAnyRandom);
+  const manualCredentials = credentialMode() === "manual";
+  $("manual-credential-fields").classList.toggle("hidden", !manualCredentials);
+  $("random-secret-status").classList.toggle("hidden", manualCredentials);
 
   validate();
   updatePreview();
@@ -336,7 +337,7 @@ function downloadCredentials() {
   URL.revokeObjectURL(url);
 }
 
-document.querySelectorAll('input[name="ip-mode"], input[name="api-key-mode"], input[name="ota-password-mode"]').forEach((el) =>
+document.querySelectorAll('input[name="ip-mode"], input[name="credential-mode"]').forEach((el) =>
   el.addEventListener("change", setModeVisibility)
 );
 
@@ -347,7 +348,7 @@ document.querySelectorAll("input").forEach((el) =>
 $("regenerate").addEventListener("click", () => {
   generateSecrets();
   $("regenerate").textContent = "Regenerated";
-  setTimeout(() => { $("regenerate").textContent = "Regenerate random values"; }, 1200);
+  setTimeout(() => { $("regenerate").textContent = "Regenerate"; }, 1200);
 });
 
 $("provision").addEventListener("click", provision);

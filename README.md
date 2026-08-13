@@ -26,29 +26,12 @@ Choose one of these network modes:
 
 ## 2. Choose the API and OTA credentials
 
-The installer lets you configure the two credentials independently.
+Choose one credential mode for both ESPHome security values:
 
-### ESPHome API encryption key
+- **Random** — recommended. The installer generates both a new 32-byte Base64 ESPHome API encryption key and a new OTA password locally in your browser. You can click **Regenerate** before provisioning if you want a new pair.
+- **Manual** — enter both your own ESPHome API encryption key and OTA password. The API key must be Base64 and decode to exactly 32 bytes. The OTA password must be 1–64 printable ASCII characters.
 
-This is used for the encrypted ESPHome native API connection, including Home Assistant.
-
-Choose:
-
-- **Random** — the installer generates a new secure 32-byte Base64 key locally in your browser.
-- **Manual** — enter an existing ESPHome API encryption key. It must be Base64 and decode to exactly 32 bytes.
-
-### ESPHome OTA password
-
-This is used for future ESPHome OTA firmware uploads.
-
-Choose:
-
-- **Random** — the installer generates a new random 64-character password locally in your browser.
-- **Manual** — enter your own password using 1–64 printable ASCII characters.
-
-You can mix these options. For example, you can generate a random API key while using your existing OTA password.
-
-If either credential is set to **Random**, you can click **Regenerate random values** before provisioning to create a new value.
+The modes cannot be mixed: **Random** generates both values, while **Manual** requires both values to be provided.
 
 ## 3. Install the firmware
 
