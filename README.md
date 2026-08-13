@@ -102,3 +102,7 @@ You can run the installer again to reconfigure the device when USB provisioning 
 ### My manual API key is rejected
 
 An ESPHome API encryption key must be a Base64 value representing exactly 32 bytes. If you do not already have a compatible key, select **Random** and let the installer create one.
+
+### The page does not react when I change an option
+
+Refresh the installer page once. The installer uses versioned page assets so updated controls and behavior load together.
