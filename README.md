@@ -24,14 +24,13 @@ Choose one of these network modes:
 - **DHCP** — recommended for most users. Your router chooses the device IP address automatically.
 - **Static IP** — use this if you want the device to always use a specific address. Make sure the IP, gateway, subnet, and DNS values are correct for your network.
 
-## 2. Choose the API and OTA credentials
+## 2. Choose the API credential
 
-Choose one credential mode for both ESPHome security values:
+Choose how the ESPHome API encryption key should be created:
 
-- **Random** — recommended. The installer generates both a new 32-byte Base64 ESPHome API encryption key and a new OTA password locally in your browser. You can click **Regenerate** before provisioning if you want a new pair.
-- **Manual** — enter both your own ESPHome API encryption key and OTA password. The API key must be Base64 and decode to exactly 32 bytes. The OTA password must be 1–64 printable ASCII characters.
+- **Random** — recommended. The installer generates a new 32-byte Base64 ESPHome API encryption key locally in your browser.
+- **Manual** — enter an existing ESPHome API encryption key. The key must be Base64 and decode to exactly 32 bytes.
 
-The modes cannot be mixed: **Random** generates both values, while **Manual** requires both values to be provided.
 
 ## 3. Install the firmware
 
@@ -49,30 +48,39 @@ After flashing, click **Provision device**.
 
 The browser will ask you to select the serial port again. Choose the Tamagotchi Remote.
 
-The installer sends the Wi-Fi configuration, API encryption key, and OTA password directly to the device. Wait for the device to confirm that provisioning completed successfully.
+The installer sends the Wi-Fi configuration and API encryption key directly to the device. Wait for the device to confirm that provisioning completed successfully.
 
-## 5. Save your credentials
+## 5. Save your credential
 
 After successful provisioning, the page shows:
 
 - Device hostname
 - Device IP address, when available
 - ESPHome API encryption key
-- ESPHome OTA password
 
-Keep the API key and OTA password somewhere secure.
+Keep the API key somewhere secure.
 
-You can use **Download credentials** to save an ESPHome YAML snippet, or copy the values individually.
+You can use **Download credentials** to save an ESPHome YAML snippet, or copy the value directly.
 
-The API encryption key is needed when connecting the device to Home Assistant if it is not already known there. The OTA password is used when uploading future ESPHome firmware updates over the network.
+The API encryption key is needed when connecting the device to Home Assistant if it is not already known there.
+
+## Firmware updates
+
+The GitHub Pages manifest supports both first installation and ESPHome managed HTTP updates:
+
+- `parts` points to `firmware/tamagotchi-remote.factory.bin` for ESP Web Tools.
+- `ota.path` points to `firmware/tamagotchi-remote.ota.bin` for ESPHome `update.http_request`.
+- `ota.md5` is calculated automatically by `npm run build` from the OTA binary before the Pages site is published.
+
+For a new release, update the manifest version and replace both firmware binaries with the matching build artifacts before publishing.
 
 ## Privacy and security
 
-The installer has no backend for storing your Wi-Fi password, API key, or OTA password.
+The installer has no backend for storing your Wi-Fi password or API key.
 
-Random credentials are generated locally in your browser. Your configuration is sent directly from the browser to the connected Tamagotchi Remote over USB.
+Random API credentials are generated locally in your browser. Your configuration is sent directly from the browser to the connected Tamagotchi Remote over USB.
 
-Do not share the downloaded credentials file publicly. It contains secrets that provide access to your device.
+Do not share the downloaded credentials file publicly. It contains a secret that provides access to your device.
 
 ## Troubleshooting
 

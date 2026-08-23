@@ -5,7 +5,7 @@ const RESPONSE_TIMEOUT_MS = 20000;
 const $ = (id) => document.getElementById(id);
 
 let randomSecrets = {};
-let lastProvisionedSecrets = { apiEncryptionKey: "", otaPassword: "" };
+let lastProvisionedSecrets = { apiEncryptionKey: "" };
 let lastResult = { hostname: "", ip: "" };
 
 function randomBytes(length) {
@@ -20,14 +20,9 @@ function toBase64(bytes) {
   return btoa(binary);
 }
 
-function toHex(bytes) {
-  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 function generateSecrets() {
   randomSecrets = {
     apiEncryptionKey: toBase64(randomBytes(32)),
-    otaPassword: toHex(randomBytes(32)),
   };
   updatePreview();
 }
@@ -52,13 +47,11 @@ function currentSecrets() {
   if (credentialMode() === "manual") {
     return {
       apiEncryptionKey: value("manual-api-key"),
-      otaPassword: $("manual-ota-password").value,
     };
   }
 
   return {
     apiEncryptionKey: randomSecrets.apiEncryptionKey,
-    otaPassword: randomSecrets.otaPassword,
   };
 }
 
@@ -78,12 +71,6 @@ function validApiEncryptionKey(key) {
   } catch (_) {
     return false;
   }
-}
-
-function validOtaPassword(password) {
-  return password.length >= 1 &&
-    password.length <= 64 &&
-    /^[\x20-\x7E]+$/.test(password);
 }
 
 function buildPayload() {
@@ -109,7 +96,6 @@ function buildPayload() {
     command: "provision",
     wifi,
     api_encryption_key: secrets.apiEncryptionKey,
-    ota_password: secrets.otaPassword,
   };
 }
 
@@ -118,9 +104,6 @@ function safePreview(payload) {
   if (clone.wifi.password) clone.wifi.password = "••••••••";
   const manualCredentials = credentialMode() === "manual";
   clone.api_encryption_key = manualCredentials
-    ? "(manual value; hidden)"
-    : "(random value generated locally; hidden until completion)";
-  clone.ota_password = manualCredentials
     ? "(manual value; hidden)"
     : "(random value generated locally; hidden until completion)";
   return clone;
@@ -152,10 +135,6 @@ function validate() {
   if (credentialMode() === "manual") {
     if (!validApiEncryptionKey(value("manual-api-key"))) {
       errors.push("Manual API encryption key must be Base64 that decodes to exactly 32 bytes.");
-    }
-
-    if (!validOtaPassword($("manual-ota-password").value)) {
-      errors.push("Manual OTA password must be 1–64 printable ASCII characters.");
     }
   }
 
@@ -250,7 +229,6 @@ async function provision() {
     const payloadObject = buildPayload();
     const provisionedSecrets = {
       apiEncryptionKey: payloadObject.api_encryption_key,
-      otaPassword: payloadObject.ota_password,
     };
 
     port = await navigator.serial.requestPort();
@@ -300,10 +278,6 @@ function yamlText() {
 api:
   encryption:
     key: ${yamlQuoted(lastProvisionedSecrets.apiEncryptionKey)}
-
-ota:
-  - platform: esphome
-    password: ${yamlQuoted(lastProvisionedSecrets.otaPassword)}
 `;
 }
 
@@ -311,7 +285,6 @@ function showResult() {
   $("result-hostname").textContent = lastResult.hostname || "—";
   $("result-ip").textContent = lastResult.ip || "—";
   $("result-api").textContent = lastProvisionedSecrets.apiEncryptionKey;
-  $("result-ota").textContent = lastProvisionedSecrets.otaPassword;
   $("result-card").classList.remove("hidden");
   $("result-card").scrollIntoView({ behavior: "smooth", block: "start" });
 }

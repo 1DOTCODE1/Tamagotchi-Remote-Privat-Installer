@@ -1,6 +1,6 @@
 # Tamagotchi provisioning protocol v1
 
-The web installer sends either a browser-generated API/OTA credential pair or a fully user-supplied API/OTA credential pair using this serial protocol. The factory firmware must implement it for the **Provision device** button to work.
+The web installer sends either a browser-generated API encryption key or a user-supplied API encryption key using this serial protocol. The factory firmware must implement it for the **Provision device** button to work.
 
 ## Transport
 
@@ -31,8 +31,7 @@ The browser sends:
     "dns1": "192.168.1.1",
     "dns2": "1.1.1.1"
   },
-  "api_encryption_key": "BASE64_32_BYTE_KEY",
-  "ota_password": "64_HEX_CHAR_PASSWORD"
+  "api_encryption_key": "BASE64_32_BYTE_KEY"
 }
 ```
 
@@ -75,9 +74,10 @@ The firmware-side provisioning component must:
 2. Store Wi-Fi SSID/password in ESPHome-compatible persistent storage.
 3. Store DHCP/static selection plus static IP/gateway/subnet/DNS settings.
 4. Store the API encryption key persistently and activate it.
-5. Store the OTA password persistently and call the OTA component's runtime password setter on every boot.
-6. Reply with `status: ok`, hostname and the effective IP.
-7. Reboot only after the response has been sent.
+5. Reply with `status: ok`, hostname and the effective IP.
+6. Reboot only after the response has been sent.
+
+Firmware updates are distributed through the HTTP update manifest published by GitHub Pages.
 
 ## ESPHome compile-time prerequisites
 
@@ -88,10 +88,17 @@ api:
   id: api_server
   encryption:
 
+http_request:
+
 ota:
-  - platform: esphome
-    id: ota_esphome
-    password: ""
+  - platform: http_request
+    id: http_ota
+
+update:
+  - platform: http_request
+    id: firmware_update
+    ota_id: http_ota
+    source: "https://<user>.github.io/<repo>/manifest.json"
 
 provisioning:
   timeout: 10min
@@ -101,7 +108,6 @@ provisioning:
 # - NVS/preferences persistence
 # - runtime Wi-Fi/static IP application
 # - API key application
-# - id(ota_esphome).set_auth_password(...)
 ```
 
-Do not put per-device API or OTA secrets in the public GitHub repository. The installer can generate both values in the browser or accept both values entered manually by the user.
+Do not put per-device API secrets in the public GitHub repository. The installer can generate the API key in the browser or accept a value entered manually by the user.

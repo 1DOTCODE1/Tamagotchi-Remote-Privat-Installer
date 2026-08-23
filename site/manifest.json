@@ -12,7 +12,11 @@
           "path": "firmware/tamagotchi-remote.factory.bin",
           "offset": 0
         }
-      ]
+      ],
+      "ota": {
+        "path": "firmware/tamagotchi-remote.ota.bin",
+        "md5": "faf6f4df96694306d8e769bbb6b447bc"
+      }
     }
   ]
 }

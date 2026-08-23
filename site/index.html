@@ -65,36 +65,31 @@
 
       <fieldset class="credentials-fieldset">
         <legend>Device credentials</legend>
-        <p class="muted credential-intro">Choose how the ESPHome API and OTA credentials should be created. Both credentials always use the same mode.</p>
+        <p class="muted credential-intro">Choose how the ESPHome API encryption key should be created.</p>
 
         <div class="radio-row">
           <label class="radio">
             <input type="radio" name="credential-mode" value="random" checked>
             <span>
               <strong>Random</strong>
-              <small>Recommended. Generate a secure API encryption key and OTA password locally in this browser.</small>
+              <small>Recommended. Generate a secure API encryption key locally in this browser.</small>
             </span>
           </label>
           <label class="radio">
             <input type="radio" name="credential-mode" value="manual">
             <span>
               <strong>Manual</strong>
-              <small>Use an existing API encryption key and OTA password that you provide.</small>
+              <small>Use an existing API encryption key that you provide.</small>
             </span>
           </label>
         </div>
 
         <div id="manual-credential-fields" class="static-fields credential-fields hidden">
-          <div class="grid two">
+          <div class="grid">
             <label>
               <span>ESPHome API encryption key</span>
               <input id="manual-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Base64 32-byte ESPHome API key">
               <small class="field-help">Must decode to exactly 32 bytes.</small>
-            </label>
-            <label>
-              <span>ESPHome OTA password</span>
-              <input id="manual-ota-password" type="password" autocomplete="new-password" spellcheck="false" maxlength="64" placeholder="Your OTA password">
-              <small class="field-help">1–64 printable ASCII characters.</small>
             </label>
           </div>
         </div>
@@ -102,7 +97,7 @@
         <div class="secret-status" id="random-secret-status">
           <div>
             <strong>Random credentials ready</strong>
-            <p>A new API encryption key and OTA password were generated locally in this browser.</p>
+            <p>A new API encryption key was generated locally in this browser.</p>
           </div>
           <button class="secondary" id="regenerate" type="button">Regenerate</button>
         </div>
@@ -156,7 +151,7 @@
         <span class="step success">✓</span>
         <div>
           <h2>Installation complete</h2>
-          <p>Save these credentials somewhere secure. The API key is needed for Home Assistant, and the OTA password is needed for future ESPHome OTA uploads.</p>
+          <p>Save this credential somewhere secure. The API key is needed for Home Assistant.</p>
         </div>
       </div>
 
@@ -173,11 +168,6 @@
           <span>API encryption key</span>
           <code id="result-api"></code>
           <button class="secondary copy" data-copy="result-api">Copy</button>
-        </div>
-        <div class="result-item wide">
-          <span>OTA password</span>
-          <code id="result-ota"></code>
-          <button class="secondary copy" data-copy="result-ota">Copy</button>
         </div>
       </div>
 
