@@ -1,6 +1,6 @@
 {
   "name": "Tamagotchi Remote",
-  "version": "1.0.0",
+  "version": "V0.3Alpha/2026.08",
   "home_assistant_domain": "esphome",
   "new_install_prompt_erase": true,
   "new_install_improv_wait_time": 0,
