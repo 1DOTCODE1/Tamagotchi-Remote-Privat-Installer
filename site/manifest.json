@@ -1,6 +1,6 @@
 {
   "name": "Tamagotchi Remote",
-  "version": "V0.3Alpha/2026.08",
+  "version": "V1.0Alpha/2026.10",
   "home_assistant_domain": "esphome",
   "new_install_prompt_erase": true,
   "new_install_improv_wait_time": 0,
@@ -15,7 +15,7 @@
       ],
       "ota": {
         "path": "firmware/tamagotchi-remote.ota.bin",
-        "md5": "faf6f4df96694306d8e769bbb6b447bc"
+        "md5": "ca8326647caf07e21a1e6711f97153d4"
       }
     }
   ]
